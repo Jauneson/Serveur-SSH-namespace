@@ -133,26 +133,26 @@ echo " restarting ssh services ..."
 systemctl restart ssh.service
 systemctl restart sshd.service
 echo "configuring namespace for ssh..."
-ip netns add servSSH
-ip netns exec servSSH ip link set lo up
+ip netns add serveurSSH
+ip netns exec serveurSSH ip link set lo up
 ip link add veth0 type veth peer name veth1
-ip link set veth1 netns servSSH
-ip netns exec servSSH ip addr add 192.168.2.2/24 dev veth1 
-ip netns exec servSSH ip link set dev veth1 up
+ip link set veth1 netns serveurSSH
+ip netns exec serveurSSH ip addr add 192.168.2.2/24 dev veth1 
+ip netns exec serveurSSH ip link set dev veth1 up
 ip addr add 192.168.2.1/24 dev veth0
 ip link set dev veth0 up
-ip netns exec servSSH route add default gw 192.168.2.1 
+ip netns exec serveurSSH route add default gw 192.168.2.1 
 iptables -t nat -A POSTROUTING -o enp0s3 -j MASQUERADE 
 sysctl -w net.ipv4.ip_forward=1
-ip netns exec servSSH sshd.service
+ip netns exec serveurSSH /etc/init.d/ssh start
 echo "done configuring namespace"
 echo "limiting ram usage ..."
-mkdir /sys/fs/cgroup/memory/servSSH
-pgrep sshd > /sys/fs/cgroup/memory/servSSH/cgroup.procs
-echo 1 000 000 000 > /sys/fs/cgroup/memory/servSSH/memory.max_usage_in_bytes
+mkdir /sys/fs/cgroup/memory/serveurSSH
+pgrep sshd > /sys/fs/cgroup/memory/serveurSSH/cgroup.procs
+echo 1 000 000 000 > /sys/fs/cgroup/memory/serveurSSH/memory.max_usage_in_bytes
 echo "limiting CPU usage..."
-mkdir /sys/fs/cgroup/cpu/servSSH
-pgrep sshd > /sys/fs/cgroup/cpu/servSSH/cgroup.procs
-echo "1000000" > /sys/fs/cgroup/cpu/servSSH/cpu.cfs_period_us
-echo "400000" > /sys/fs/cgroup/cpu/servSSH/cpu.cfs_quota_us
+mkdir /sys/fs/cgroup/cpu/serveurSSH
+pgrep sshd > /sys/fs/cgroup/cpu/serveurSSH/cgroup.procs
+echo "1000000" > /sys/fs/cgroup/cpu/serveurSSH/cpu.cfs_period_us
+echo "400000" > /sys/fs/cgroup/cpu/serveurSSH/cpu.cfs_quota_us
 echo "Cgroup configured. SSHD is now running in his own namespace, and is limited to 1 GB of ram and 40% of CPU"
